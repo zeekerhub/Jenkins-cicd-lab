@@ -29,12 +29,12 @@ pipeline {
                 sh """
                     docker run -d \
                         --name test-${BUILD_NUMBER} \
-                        -p 5000:5000 \
+                        -p 5001:5001 \
                         -e BUILD_NUMBER=${BUILD_NUMBER} \
                         ${IMAGE_NAME}:${IMAGE_TAG}
                 """
                 sh 'sleep 3'
-                sh 'curl -f http://localhost:5000/health || exit 1'
+                sh 'curl -f http://localhost:5001/health || exit 1'
                 echo 'Health check passed!'
             }
         }
