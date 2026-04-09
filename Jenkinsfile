@@ -1,39 +1,64 @@
 pipeline {
     agent any
 
+    environment {
+        IMAGE_NAME = "jenkins-lab"
+        IMAGE_TAG  = "build-${env.BUILD_NUMBER}"
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                echo "Checking out branch: ${env.GIT_BRANCH}"
+                echo "Branch: ${env.GIT_BRANCH}"
                 echo "Commit: ${env.GIT_COMMIT}"
-            }
-        }
-
-        stage('Build') {
-            steps {
-                echo 'Running build step...'
-                sh 'echo "Build triggered at: $(date)"'
                 sh 'ls -la'
             }
         }
 
-        stage('Test') {
+        stage('Build Docker Image') {
             steps {
-                echo 'Running tests...'
-                sh 'echo "All tests passed!"'
+                echo "Building image: ${IMAGE_NAME}:${IMAGE_TAG}"
+                sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} ."
+                sh "docker images | grep ${IMAGE_NAME}"
+            }
+        }
+
+        stage('Test Container') {
+            steps {
+                echo 'Starting container to verify it runs...'
+                sh """
+                    docker run -d \
+                        --name test-${BUILD_NUMBER} \
+                        -p 5000:5000 \
+                        -e BUILD_NUMBER=${BUILD_NUMBER} \
+                        ${IMAGE_NAME}:${IMAGE_TAG}
+                """
+                sh 'sleep 3'
+                sh 'curl -f http://localhost:5000/health || exit 1'
+                echo 'Health check passed!'
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                echo 'Stopping and removing test container...'
+                sh "docker stop test-${BUILD_NUMBER} || true"
+                sh "docker rm test-${BUILD_NUMBER} || true"
             }
         }
     }
 
     post {
         success {
-            echo "Pipeline SUCCESS on branch: ${env.GIT_BRANCH}"
+            echo "Image ${IMAGE_NAME}:${IMAGE_TAG} built and verified successfully"
         }
         failure {
-            echo "Pipeline FAILED — check logs above"
+            echo 'Build failed — cleaning up any leftover containers'
+            sh "docker stop test-${BUILD_NUMBER} || true"
+            sh "docker rm test-${BUILD_NUMBER} || true"
         }
         always {
-            echo "Pipeline finished. Build #${env.BUILD_NUMBER}"
+            echo "Build #${BUILD_NUMBER} complete"
         }
     }
 }
