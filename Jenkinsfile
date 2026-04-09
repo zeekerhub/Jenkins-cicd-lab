@@ -4,6 +4,7 @@ pipeline {
     environment {
         IMAGE_NAME = "jenkins-lab"
         IMAGE_TAG  = "build-${env.BUILD_NUMBER}"
+        PATH       = "/usr/local/bin:/opt/homebrew/bin:${env.PATH}"
     }
 
     stages {
