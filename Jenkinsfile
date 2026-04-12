@@ -86,7 +86,8 @@ pipeline {
         }
 
         stage('Cleanup') {
-            steps echo 'Cleaning up local test container...'
+            steps {
+        echo 'Cleaning up local test container...'
                 sh "docker stop test-${BUILD_NUMBER} || true"
                 sh "docker rm test-${BUILD_NUMBER} || true"
             }
