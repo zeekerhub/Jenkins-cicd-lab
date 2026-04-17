@@ -67,7 +67,7 @@ pipeline {
             sh """
                 ssh -i $SSH_KEY \
                     -o StrictHostKeyChecking=no \
-                    ubuntu@3.89.59.64 \
+                    ubuntu@54.87.224.157 \
                     '
                     docker pull zeeker1/jenkins-lab:latest &&
                     docker stop myapp || true &&
@@ -81,7 +81,7 @@ pipeline {
                     '
             """
         }
-        echo "App deployed at http://3.89.59.64:5001"
+        echo "App deployed at http://54.87.224.157:5001"
     }
 }
 
@@ -96,7 +96,7 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline complete — app live at http://3.89.59.64:5001"
+            echo "Pipeline complete — app live at http://54.87.224.157:5001"
         }
         failure {
             echo 'Build failed — cleaning up'
