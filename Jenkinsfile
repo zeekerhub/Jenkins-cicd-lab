@@ -58,32 +58,32 @@ pipeline {
         }
 
         stage('Deploy to EC2') {
-            steps {
-                echo 'Deploying to AWS EC2...'
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ec2-ssh-key',
-                    keyFileVariable: 'SSH_KEY'
-                )]) {
-                    sh """
-                        ssh -i $SSH_KEY \
-                            -o StrictHostKeyChecking=no \
-                            ubuntu@34.207.178.84 \
-                            '
-                            docker pull zeeker1/jenkins-lab:latest &&
-                            docker stop myapp || true &&
-                            docker rm myapp || true &&
-                            docker run -d \
-                                --name myapp \
-                                --restart always \
-                                -p 5001:5001 \
-                                zeeker1/jenkins-lab:latest &&
-                            docker ps
-                            '
-                    """
-                }
-                echo "App deployed at http://34.207.178.84:5001"
-            }
+    steps {
+        echo 'Deploying to AWS EC2...'
+        withCredentials([sshUserPrivateKey(
+            credentialsId: 'ec2-ssh-key',
+            keyFileVariable: 'SSH_KEY'
+        )]) {
+            sh """
+                ssh -i $SSH_KEY \
+                    -o StrictHostKeyChecking=no \
+                    ubuntu@3.89.59.64 \
+                    '
+                    docker pull zeeker1/jenkins-lab:latest &&
+                    docker stop myapp || true &&
+                    docker rm myapp || true &&
+                    docker run -d \
+                        --name myapp \
+                        --restart always \
+                        -p 5001:5001 \
+                        zeeker1/jenkins-lab:latest &&
+                    docker ps
+                    '
+            """
         }
+        echo "App deployed at http://3.89.59.64:5001"
+    }
+}
 
         stage('Cleanup') {
             steps {
