@@ -96,7 +96,7 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline complete — app live at http://34.207.178.84:5001"
+            echo "Pipeline complete — app live at http://3.89.59.64:5001"
         }
         failure {
             echo 'Build failed — cleaning up'
