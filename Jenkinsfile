@@ -47,7 +47,7 @@ pipeline {
                 sh """
                     docker run -d \
                         --name test-${BUILD_NUMBER} \
-                        -p 5001:5001 \
+                        -p 5002:5001 \
                         -e BUILD_NUMBER=${BUILD_NUMBER} \
                         ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}
                 """
