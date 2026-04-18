@@ -6,3 +6,8 @@ terraform/.terraform.lock.hcl
 terraform/tfplan
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/tfplan
+terraform/terraform.tfstate
+terraform/terraform.tfstate.backup
