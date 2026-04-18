@@ -5,7 +5,7 @@ pipeline {
         IMAGE_NAME      = "jenkins-lab"
         IMAGE_TAG       = "build-${env.BUILD_NUMBER}"
         DOCKERHUB_USER  = "zeeker1"
-        EC2_IP          = "3.80.26.36"
+        EC2_IP          = "50.19.163.179"
         PATH            = "/usr/local/bin:/opt/homebrew/bin:${env.PATH}"
     }
 
