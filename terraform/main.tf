@@ -65,11 +65,3 @@ resource "aws_instance" "app_server" {
     Name = var.instance_name
   }
 }
-
-output "instance_public_ip" {
-  value = aws_instance.app_server.public_ip
-}
-
-output "app_url" {
-  value = "http://${aws_instance.app_server.public_ip}:${var.app_port}"
-}
