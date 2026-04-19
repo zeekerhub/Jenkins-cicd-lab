@@ -48,7 +48,6 @@ resource "aws_instance" "app_server" {
   instance_type               = var.instance_type
   key_name                    = var.key_name
   vpc_security_group_ids      = [aws_security_group.app_sg.id]
-  user_data_replace_on_change = true
 
   user_data = <<-EOF
     #!/bin/bash
@@ -59,6 +58,7 @@ resource "aws_instance" "app_server" {
     systemctl start docker
     systemctl enable docker
     usermod -aG docker ubuntu || true
+  chmod 666 /var/run/docker.sock
 
     docker rm -f myapp || true
     docker pull ${var.dockerhub_username}/jenkins-lab:${var.image_tag}
