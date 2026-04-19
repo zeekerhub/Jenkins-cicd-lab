@@ -50,24 +50,21 @@ resource "aws_instance" "app_server" {
   vpc_security_group_ids      = [aws_security_group.app_sg.id]
 
   user_data = <<-EOF
-    #!/bin/bash
-    set -eux
-
-    apt update -y
-    apt install -y docker.io
-    systemctl start docker
-    systemctl enable docker
-    usermod -aG docker ubuntu || true
-  chmod 666 /var/run/docker.sock
-
-    docker rm -f myapp || true
-    docker pull ${var.dockerhub_username}/jenkins-lab:${var.image_tag}
-    docker run -d \
-      --name myapp \
-      --restart always \
-      -p ${var.app_port}:${var.app_port} \
-      ${var.dockerhub_username}/jenkins-lab:${var.image_tag}
-  EOF
+#!/bin/bash
+set -eux
+apt update -y
+apt install -y docker.io
+systemctl start docker
+systemctl enable docker
+usermod -aG docker ubuntu
+chmod 666 /var/run/docker.sock
+docker pull zeeker1/jenkins-lab:latest
+docker run -d \
+  --name myapp \
+  --restart always \
+  -p 5001:5001 \
+  zeeker1/jenkins-lab:latest
+EOF
 
   tags = {
     Name = var.instance_name
