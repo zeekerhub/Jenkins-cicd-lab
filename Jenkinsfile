@@ -2,11 +2,10 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME      = "jenkins-lab"
-        IMAGE_TAG       = "build-${env.BUILD_NUMBER}"
-        DOCKERHUB_USER  = "zeeker1"
-        EC2_IP          = "50.19.163.179"
-        PATH            = "/usr/local/bin:/opt/homebrew/bin:${env.PATH}"
+        IMAGE_NAME     = "jenkins-lab"
+        IMAGE_TAG      = "build-${env.BUILD_NUMBER}"
+        DOCKERHUB_USER = "zeeker1"
+        PATH           = "/usr/local/bin:/opt/homebrew/bin:${env.PATH}"
     }
 
     stages {
@@ -21,16 +20,16 @@ pipeline {
         stage('Terraform') {
             steps {
                 echo 'Provisioning infrastructure with Terraform...'
-                withCredentials([[$class: 'AmazonWebServicesCredentialsBinding',
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
                     credentialsId: 'aws-credentials',
                     accessKeyVariable: 'AWS_ACCESS_KEY_ID',
                     secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
                 ]]) {
                     sh '''
                         cd terraform
-                        terraform init
-                        terraform plan -out=tfplan
-                        terraform apply -auto-approve tfplan
+                        terraform init -reconfigure
+                        terraform apply -auto-approve
                     '''
                 }
                 echo 'Infrastructure ready'
@@ -79,16 +78,25 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                echo 'Deploying to AWS EC2...'
-                withCredentials([sshUserPrivateKey(
-                    credentialsId: 'ec2-ssh-key',
-                    keyFileVariable: 'SSH_KEY'
-                )]) {
-                    sh """
+                echo 'Getting EC2 IP from Terraform output...'
+                withCredentials([
+                    [$class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-credentials',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ],
+                    sshUserPrivateKey(
+                        credentialsId: 'ec2-ssh-key',
+                        keyFileVariable: 'SSH_KEY'
+                    )
+                ]) {
+                    sh '''
+                        EC2_IP=$(cd terraform && terraform output -raw instance_public_ip)
+                        echo "Deploying to EC2 at: $EC2_IP"
                         ssh -i $SSH_KEY \
                             -o StrictHostKeyChecking=no \
-                            ubuntu@${EC2_IP} \
-                            '
+                            ubuntu@$EC2_IP \
+                            "
                             docker pull zeeker1/jenkins-lab:latest &&
                             docker stop myapp || true &&
                             docker rm myapp || true &&
@@ -98,10 +106,10 @@ pipeline {
                                 -p 5001:5001 \
                                 zeeker1/jenkins-lab:latest &&
                             docker ps
-                            '
-                    """
+                            "
+                        echo "App deployed at http://$EC2_IP:5001"
+                    '''
                 }
-                echo "App deployed at http://${EC2_IP}:5001"
             }
         }
 
@@ -116,7 +124,7 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline complete — app live at http://${EC2_IP}:5001"
+            echo "Pipeline complete — build ${BUILD_NUMBER} deployed successfully"
         }
         failure {
             echo 'Build failed — cleaning up'
