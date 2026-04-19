@@ -28,7 +28,7 @@ pipeline {
                 ]]) {
                     sh '''
                         cd terraform
-                        terraform init -reconfigure
+                        terraform init -reconfigure -force-copy
                         terraform apply -auto-approve
                     '''
                 }
