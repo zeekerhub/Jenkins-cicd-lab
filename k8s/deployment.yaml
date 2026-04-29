@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-lab
+  labels:
+    app: jenkins-lab
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: jenkins-lab
+  template:
+    metadata:
+      labels:
+        app: jenkins-lab
+    spec:
+      containers:
+      - name: jenkins-lab
+        image: IMAGE_PLACEHOLDER
+        ports:
+        - containerPort: 5001
+        env:
+        - name: BUILD_NUMBER
+          value: "BUILD_PLACEHOLDER"

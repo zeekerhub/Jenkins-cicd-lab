@@ -16,26 +16,7 @@ pipeline {
                 sh 'ls -la'
             }
         }
-
-        stage('Terraform') {
-            steps {
-                echo 'Provisioning infrastructure with Terraform...'
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                ]]) {
-                    sh '''
-                        cd terraform
-                        terraform init -reconfigure -force-copy
-                        terraform apply -auto-approve
-                    '''
-                }
-                echo 'Infrastructure ready'
-            }
-        }
-
+        
         stage('Build and Push') {
             steps {
                 echo "Building multi-platform image: ${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}"
@@ -76,58 +57,20 @@ pipeline {
             }
         }
 
-        stage('Deploy to EC2') {
+        stage('Deploy to Kubernetes') {
             steps {
-                echo 'Getting EC2 IP from Terraform output...'
-                withCredentials([
-                    [$class: 'AmazonWebServicesCredentialsBinding',
-                        credentialsId: 'aws-credentials',
-                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                    ],
-                    sshUserPrivateKey(
-                        credentialsId: 'ec2-ssh-key',
-                        keyFileVariable: 'SSH_KEY'
-                    )
-                ]) {
-                    sh '''
-    EC2_IP=$(cd terraform && terraform output -raw instance_public_ip)
-    echo "Deploying to EC2 at: $EC2_IP"
-    
-    # Wait for Docker to be ready on the new server
-    echo "Waiting for Docker to be ready..."
-    for i in $(seq 1 12); do
-        if ssh -i $SSH_KEY \
-            -o StrictHostKeyChecking=no \
-            -o ConnectTimeout=10 \
-            ubuntu@$EC2_IP "docker --version" 2>/dev/null; then
-            echo "Docker is ready!"
-            break
-        fi
-        echo "Attempt $i/12 - Docker not ready yet, waiting 15 seconds..."
-        sleep 15
-    done
-    
-    ssh -i $SSH_KEY \
-        -o StrictHostKeyChecking=no \
-        ubuntu@$EC2_IP \
-        "
-        docker pull zeeker1/jenkins-lab:latest &&
-        docker stop myapp || true &&
-        docker rm myapp || true &&
-        docker run -d \
-            --name myapp \
-            --restart always \
-            -p 5001:5001 \
-            zeeker1/jenkins-lab:latest &&
-        docker ps
-        "
-    echo "App deployed at http://$EC2_IP:5001"
-'''
-                }
+                echo 'Deploying to Kubernetes...'
+                sh """
+                    sed -i '' 's|IMAGE_PLACEHOLDER|${DOCKERHUB_USER}/${IMAGE_NAME}:${IMAGE_TAG}|g' k8s/deployment.yaml
+                    sed -i '' 's|BUILD_PLACEHOLDER|${BUILD_NUMBER}|g' k8s/deployment.yaml
+                    kubectl apply -f k8s/deployment.yaml
+                    kubectl apply -f k8s/service.yaml
+                    kubectl rollout status deployment/jenkins-lab --timeout=60s
+                """
+                echo 'Deployed to Kubernetes successfully'
             }
         }
-
+                
         stage('Cleanup') {
             steps {
                 echo 'Cleaning up local test container...'
@@ -139,7 +82,7 @@ pipeline {
 
     post {
         success {
-            echo "Pipeline complete — build ${BUILD_NUMBER} deployed successfully"
+            echo "Pipeline complete — build ${BUILD_NUMBER} deployed to Kubernetes"
         }
         failure {
             echo 'Build failed — cleaning up'
