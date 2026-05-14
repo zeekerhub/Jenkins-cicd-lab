@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: jenkins-lab
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "5001"
+        prometheus.io/path: "/metrics"
     spec:
       containers:
       - name: jenkins-lab
