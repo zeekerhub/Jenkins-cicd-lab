@@ -20,9 +20,9 @@ spec:
     spec:
       containers:
       - name: jenkins-lab
-        image: IMAGE_PLACEHOLDER
+        image: zeeker1/jenkins-lab:latest
         ports:
         - containerPort: 5001
         env:
         - name: BUILD_NUMBER
-          value: "BUILD_PLACEHOLDER"
+          value: "31"
